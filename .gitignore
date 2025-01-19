@@ -1,3 +1,4 @@
 # .gitignore
 app/model.pth
 venv_thesis/
+app/.env
