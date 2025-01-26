@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# telegram-bot vagy ilyesmi megközelítés?
+
 class Notifier:
     def __init__(self):
         self.smtp_server = os.getenv('SMTP_SERVER')
@@ -17,7 +19,7 @@ class Notifier:
         self.recipient_email = os.getenv('RECIPIENT_EMAIL')
         self.sender_password = os.getenv('SENDER_PASSWORD')
 
-    def send_notification(self, recipient_email, printer_status, camera_image):
+    def send_notification(self, printer_status, camera_image):
         try:
 
             msg = MIMEMultipart()
@@ -47,10 +49,8 @@ class Notifier:
                 server.starttls()
                 server.login(self.sender_email, self.sender_password)
                 server.sendmail(self.sender_email, self.recipient_email, msg.as_string())
-                print(self.sender_email)
-                print(self.recipient_email)
             
-            print("Email notification sent successfully!")
+            print("Email notification sent!")
         
-        except Exception as e:
-            print(f"Failed to send email: {e}")
+        except Exception as ex:
+            print(f"Failed to send email: {ex}")

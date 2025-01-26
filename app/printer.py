@@ -6,6 +6,9 @@ class Printer:
 	BASE_URL = f"http://{PRINTER_HOSTNAME}"
 	# Konstansoknak fel lehetne sorolni a különböző commandokat amire szükség lehet.
 	M119 = "M119" # Endstop státusz lekérdezés.
+	HOMEALL= "M98 P\"homeall.g"
+	PRINT_END = "M98 P\"Print_end.g"
+	PAUSE = "M98 P\"pause.g"
 	
 	def get_printer_status(self):
 		try:
