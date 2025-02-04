@@ -1,9 +1,9 @@
 from controller import Controller
 from gui import GUIApp
-from notifier import Notifier
+from telegram_notifier import TelegramNotifier
 
 if __name__ == "__main__":
-    notifier = Notifier()
+    telegram_notifier = TelegramNotifier()
     controller = Controller()
     app = GUIApp(controller)
     app.mainloop()

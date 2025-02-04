@@ -12,13 +12,6 @@ load_dotenv()
 # telegram-bot vagy ilyesmi megközelítés?
 
 class Notifier:
-    def __init__(self):
-        self.smtp_server = os.getenv('SMTP_SERVER')
-        self.smtp_port = int(os.getenv('SMTP_PORT'))
-        self.sender_email = os.getenv('SENDER_EMAIL')
-        self.recipient_email = os.getenv('RECIPIENT_EMAIL')
-        self.sender_password = os.getenv('SENDER_PASSWORD')
-
     def send_notification(self, printer_status, camera_image):
         try:
 

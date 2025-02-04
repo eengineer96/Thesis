@@ -2,6 +2,7 @@ from picamera2 import Picamera2
 from printer import Printer
 from model_evaluator import ModelEvaluator
 from PIL import Image
+from telegram_notifier import TelegramNotifier
 
 class Controller:
     def __init__(self, tolerance=80.0, persistence=10):
@@ -13,6 +14,7 @@ class Controller:
         model_path = '/home/LaszloPota/Desktop/Thesis/app/model.pth'
         self.model_evaluator = ModelEvaluator(model_path)
         self.printer = Printer()
+        self.telegram_notifier = TelegramNotifier()
 
         self._tolerance = tolerance
         self._persistence = persistence

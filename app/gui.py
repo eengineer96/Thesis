@@ -3,6 +3,8 @@ from customtkinter import CTkImage
 from PIL import Image
 from controller import Controller
 from notifier import Notifier
+from telegram_notifier import TelegramNotifier
+import asyncio
 
 
 class GUIApp(ctk.CTk):
@@ -16,6 +18,7 @@ class GUIApp(ctk.CTk):
         self.geometry("1000x600")
         self.controller = controller
         self.notifier = Notifier()
+        self.telegram_notifier = TelegramNotifier()
         self.tolerance = 70.0  
         self.persistence = 10
         self.nok_counter = 0
@@ -117,7 +120,9 @@ class GUIApp(ctk.CTk):
         printer_status = self.controller.printer.get_printer_status()
         frame = self.controller.get_camera_frame()
         frame_image = Image.fromarray(frame).convert("RGB")
-        self.notifier.send_notification(printer_status, frame_image)
+        asyncio.run(self.telegram_notifier.send_notification(printer_status, frame_image))
+        #self.notifier.send_notification(printer_status, frame_image)
+
 
     def close_app(self):
         self.controller.shutdown()
