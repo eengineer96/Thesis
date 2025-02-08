@@ -2,33 +2,34 @@ import customtkinter as ctk
 from customtkinter import CTkImage
 from PIL import Image
 from controller import Controller
-from notifier import Notifier
 from telegram_notifier import TelegramNotifier
 import asyncio
-
+import threading
 
 class GUIApp(ctk.CTk):
     MODEL_EVALUATION_INTERVAL = 1000
     CAMERA_UPDATE_INTERVAL = 100
 
-    def __init__(self, controller):
+    def __init__(self, controller, telegram_notifier):
         super().__init__()
         ctk.set_appearance_mode("dark")
         self.title("Anomaly Detection")
         self.geometry("1000x600")
         self.controller = controller
-        self.notifier = Notifier()
-        self.telegram_notifier = TelegramNotifier()
-        self.tolerance = 70.0  
-        self.persistence = 10
-        self.nok_counter = 0
-        self.auto_mode = False  
+        self.telegram_notifier = telegram_notifier
+        self.tolerance = controller.tolerance 
+        self.persistence = controller.persistence
+        self.auto_mode = controller.mode
+        self.nok_counter = controller.nok_counter
+          
 
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=2)
         self.rowconfigure(0, weight=1)
         self.rowconfigure(1, weight=0)
 
+        self.telegram_notifier.start_bot()
+        
         self.setup_gui()
         self.update_camera_feed()
         self.evaluate_model()
@@ -120,8 +121,12 @@ class GUIApp(ctk.CTk):
         printer_status = self.controller.printer.get_printer_status()
         frame = self.controller.get_camera_frame()
         frame_image = Image.fromarray(frame).convert("RGB")
-        asyncio.run(self.telegram_notifier.send_notification(printer_status, frame_image))
-        #self.notifier.send_notification(printer_status, frame_image)
+
+        asyncio.run_coroutine_threadsafe(
+            self.telegram_notifier.send_notification(printer_status, frame_image),
+            self.telegram_notifier.loop
+        )
+
 
 
     def close_app(self):
