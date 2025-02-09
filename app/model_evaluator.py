@@ -4,11 +4,13 @@ from PIL import Image
 from model import CNN
 
 class ModelEvaluator:
-    def __init__(self, model_path):
+    MODEL_PATH = '/home/LaszloPota/Desktop/Thesis/app/model.pth'
+    
+    def __init__(self):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = CNN()
         self.model.to(self.device)
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device))
+        self.model.load_state_dict(torch.load(self.MODEL_PATH, map_location=self.device))
         self.model.eval()
         
         self.transform = transforms.Compose([

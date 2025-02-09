@@ -1,25 +1,35 @@
 from picamera2 import Picamera2
-from printer import Printer
-from model_evaluator import ModelEvaluator
 from PIL import Image
-from telegram_notifier import TelegramNotifier
+import asyncio
+import time
+import threading
 
 class Controller:
-    def __init__(self):
+    NOTIFICATION_RESET_TIME = 300000
+    MODEL_EVALUATION_INTERVAL = 3000
+    CAMERA_UPDATE_INTERVAL = 100
+    
+    def __init__(self, telegram_notifier, gui, printer, model_evaluator):
         self.camera = Picamera2()
         self.camera_config = self.camera.create_still_configuration(main={"size": (640, 480)})
         self.camera.configure(self.camera_config)
         self.camera.start()
 
-        model_path = '/home/LaszloPota/Desktop/Thesis/app/model.pth'
-        self.model_evaluator = ModelEvaluator(model_path)
-        self.printer = Printer()
-        #self.telegram_notifier = TelegramNotifier()
+        self.model_evaluator = model_evaluator
+        self.printer = printer
+        self.telegram_notifier = telegram_notifier
+        self.gui = gui
+        
+        self.telegram_notifier.start_bot()
 
         self._tolerance = 80
         self._persistence = 10
         self._mode = False
         self._nok_counter = 0
+        self._result = ""
+        self._confidence = 0
+        self._persistent_anomaly = 0
+        self. notification_sent_flag = False
     
     
     @property
@@ -54,37 +64,91 @@ class Controller:
     def persistence(self, value):
         self._persistence = int(value)
         
+    @property
+    def result(self):
+        return self._result
+        
+    @result.setter	
+    def result(self, value):
+        self._result = value
+    
+    @property
+    def confidence(self):
+        return self._confidence
+        
+    @confidence.setter	
+    def confidence(self, value):
+        self._confidence = float(value)
+        
+    @property
+    def persistent_anomaly(self):
+        return self._persistent_anomaly
+        
+    @persistent_anomaly.setter	
+    def persistent_anomaly(self, value):
+        self._persistent_anomaly = value
+    
+    @property
+    def nok_counter(self):
+        return self._nok_counter
+        
+    @nok_counter.setter	
+    def nok_counter(self, value):
+        self._nok_counter = value
+        
     def reset_counter(self):
         self.nok_counter = 0
     
     def get_camera_frame(self):
         return self.camera.capture_array()
+        
 
     def evaluate_model(self):
         frame = self.get_camera_frame()
         frame_image = Image.fromarray(frame)
         frame_image = frame_image.convert("RGB")
-        result, confidence = self.model_evaluator.evaluate(frame_image)
+        self.result, self.confidence = self.model_evaluator.evaluate(frame_image)
         
-        if result != "OK" and confidence >= self.tolerance:
+        self.calculate_nok_counter()
+        
+        self.evaluate_anomaly_persistence(frame_image)
+        
+        self.gui.update_evaluation_values(self.result, self.confidence)
+        self.gui.after(self.MODEL_EVALUATION_INTERVAL, self.evaluate_model)
+    
+    def calculate_nok_counter(self):
+        if self.result != "OK" and self.confidence >= self.tolerance:
             self.nok_counter += 1
         else:
             self.nok_counter = 0
-			
-        persistent_anomaly = self.nok_counter >= self.persistence
+    
+    def evaluate_anomaly_persistence(self, frame_image):
+        self.persistent_anomaly = self.nok_counter >= self.persistence
         
-        if persistent_anomaly:
-            self.stop_printer()
-        
-        return result, confidence, persistent_anomaly
-        
+        if self.persistent_anomaly:
+            self.send_notification(frame_image)
+            if self.mode:
+                self.stop_printer()
+    
+    def send_notification(self, frame_image):
+        if not self.notification_sent_flag:
+            self.notification_sent_flag = True
+            self.gui.after(self.NOTIFICATION_RESET_TIME, self.reset_notification_flag)
+            asyncio.run_coroutine_threadsafe(
+                self.telegram_notifier.send_notification(frame_image),
+                self.telegram_notifier.loop
+            )
+
+    
     def stop_printer(self):
         try:
             self.printer.send_gcode_command(self.printer.PRINT_END) 
-            print("Printer stopped due to anomaly detection.")
         except Exception as ex:
             print(f"Failed to stop the printer: {ex}")
 
+    def reset_notification_flag(self):
+        self.notification_sent_flag = False
+    
     def send_gcode(self, command):
         self.printer.send_gcode_command(command)
 

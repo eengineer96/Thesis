@@ -7,24 +7,32 @@ from httpx import TimeoutException, NetworkError
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from PIL import Image
+from formatter import format_data
 
 load_dotenv()
+"""
+TODO:
 
+Try-Catchbe kell rakni minden commandot amit kap is, mert nem tudja a GUI-t updatelni rendesen, ha épp nem ott jár a folyamat.
+PRINT-END el lett küldve vagy 10x amikor az automata mód kickelt.
+
+"""
 class TelegramNotifier:
-    def __init__(self, controller):
-        self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN")  # Add to .env
-        self.chat_id = int(os.getenv("TELEGRAM_CHAT_ID"))  # Convert to int
+    def __init__(self):
+        self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN") 
+        self.chat_id = int(os.getenv("TELEGRAM_CHAT_ID"))
         self.bot = Bot(token=self.bot_token)
-        
-        self.controller = controller
+
+        self.controller = None
         
         self.application = Application.builder().token(self.bot_token).build()
-
-        self.application.add_handler(CommandHandler("start", self.start_command))
-        self.application.add_handler(CommandHandler("status", self.status_command))
-        self.application.add_handler(CommandHandler("stop", self.stop_command))
+        
         self.application.add_handler(CommandHandler("auto", self.auto_command))
         self.application.add_handler(CommandHandler("manual", self.manual_command))
+        self.application.add_handler(CommandHandler("pause", self.pause_command))
+        self.application.add_handler(CommandHandler("status", self.status_command))
+        self.application.add_handler(CommandHandler("stop", self.stop_command))
+
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.unknown_command))
         
         self.loop = asyncio.new_event_loop()
@@ -34,92 +42,115 @@ class TelegramNotifier:
     def start_loop(self, loop):
         asyncio.set_event_loop(loop)
         loop.run_forever()
+        
+    def set_controller(self, controller):
+        self.controller = controller
+        
+    def prepare_message(self):
+        """Queries the status of 3D printer and formats it into a readable text with the formatter."""
+        response = self.controller.printer.get_printer_status()
+        formatted_text = format_data(response, self.controller.mode, self.controller.result, self.controller.confidence, self.controller.nok_counter)
+        
+        return formatted_text
+    
+    def is_authorized(self, chat_id):
+        """Validates the messager, this function is called before every command execution."""
+        return chat_id == self.chat_id
 
-    async def send_notification(self, printer_status, camera_image):
+    async def send_notification(self, camera_image):
+        """Sends a message with an image. This method is called if there is a persistent anomaly, and no notificiation has beent sent in a given time."""
         retries = 3
         for i in range(retries):
             try:
-                message = f"? 3D Printer Notification ?\n\n? *Status:*\n{printer_status}"
+                message = "Persistent anomaly detected:"
                 await self.bot.send_message(chat_id=self.chat_id, text=message, parse_mode="Markdown")
 
                 img_buffer = BytesIO()
                 camera_image.save(img_buffer, format="JPEG")
                 img_buffer.seek(0)
 
-                await self.bot.send_photo(chat_id=self.chat_id, photo=img_buffer, caption="? Camera Snapshot")
-                print("? Telegram notification sent!")
+                await self.bot.send_photo(chat_id=self.chat_id, photo=img_buffer)
                 break
 
-            except (TimeoutException, NetworkError) as e:
+            except (TimeoutException, NetworkError) as ex:
                 if i < retries - 1:
-                    print(f"Retrying due to error: {e}")
-                    await asyncio.sleep(2)  # Wait before retrying
-                else:
-                    print(f"Failed after {retries} attempts: {e}")
+                    print(f"Retrying due to error: {ex}")
+                    await asyncio.sleep(5)
 
             except Exception as ex:
-                print(f"? Failed to send Telegram notification: {ex}")
-
-    async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handles the /start command."""
-        if update.message.chat_id == self.chat_id:
-            await update.message.reply_text("? Bot is online! Send /status to check printer status.")
-        else:
-            await update.message.reply_text("? You are not authorized to use this bot.")
-
+                print(f"Failed to send Telegram notification: {ex}")
+                
+    async def pause_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handles the /pause command. Sends the PAUSE gcode to the printer."""
+        if not self.is_authorized(update.message.chat_id):
+            await update.message.reply_text("You are not allowed to use this bot.")
+            return
+        
+        response = self.controller.printer.send_gcode_command(self.controller.printer.PAUSE)
+        await update.message.reply_text(f"Printer's response: {response}")
+        
+        
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handles the /status command to check printer status."""
-        printer_status = self.controller.printer.get_printer_status() + f"Evaluation mode: {'automatic' if self.controller.mode else 'manual'}" # Adjust according to your method to get status
-        frame = self.controller.get_camera_frame()  # Get the camera frame (replace with your actual method)
-        camera_image = Image.fromarray(frame).convert("RGB")  # Convert frame to image
+        """Handles the /status command. Sends an image and a few parameters."""
+        if not self.is_authorized(update.message.chat_id):
+            await update.message.reply_text("You are not allowed to use this bot.")
+            return
+            
+        message = self.prepare_message()
+        frame = self.controller.get_camera_frame()
+        camera_image = Image.fromarray(frame).convert("RGB")
         
         retries = 3
         for i in range(retries):
             try:
-                await self.bot.send_message(chat_id=self.chat_id, text=printer_status, parse_mode="Markdown")
+                await self.bot.send_message(chat_id=self.chat_id, text=message, parse_mode="Markdown")
 
                 img_buffer = BytesIO()
                 camera_image.save(img_buffer, format="JPEG")
                 img_buffer.seek(0)
 
                 await self.bot.send_photo(chat_id=self.chat_id, photo=img_buffer)
-                print("Telegram notification sent!")
                 break
 
-            except (TimeoutException, NetworkError) as e:
+            except (TimeoutException, NetworkError) as ex:
                 if i < retries - 1:
-                    print(f"Retrying due to error: {e}")
-                    await asyncio.sleep(2)  # Wait before retrying
-                else:
-                    print(f"Failed after {retries} attempts: {e}")
+                    print(f"Retrying due to error: {ex}")
+                    await asyncio.sleep(5)
 
             except Exception as ex:
-                print(f"? Failed to send Telegram notification: {ex}")
+                print(f"Failed to send Telegram notification: {ex}")
 
     async def stop_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handles the /stop command to stop the printer."""
-        if update.message.chat_id == self.chat_id:
-            response = self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
-            await update.message.reply_text(f"Printer's response: {response}")
-        else:
-            await update.message.reply_text("? You are not authorized to use this bot.")
-
+        """Handles the /stop command. Sends the PRINT_END gcode to the printer."""
+        if not self.is_authorized(update.message.chat_id):
+            await update.message.reply_text("You are not allowed to use this bot.")
+            return
+            
+        response = self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
+        await update.message.reply_text(f"Printer's response: {response}")
+        
     async def auto_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.message.chat_id == self.chat_id:
-            self.controller.mode = True
-            await update.message.reply_text(f"Evaluation mode is set to: {'automatic' if self.controller.mode else 'manual'}")
-        else:
-            await update.message.reply_text("? You are not authorized to use this bot.")
+        """Handles the /auto command. Sets the controller to automatic mode."""
+        if not self.is_authorized(update.message.chat_id):
+            await update.message.reply_text("You are not allowed to use this bot.")
+            return
+        
+        self.controller.mode = True
+        self.controller.gui.toggle_mode_update()
+        await update.message.reply_text(f"Evaluation mode is set to: {'automatic' if self.controller.mode else 'manual'}")
         
     async def manual_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        if update.message.chat_id == self.chat_id:
-            self.controller.mode = False
-            await update.message.reply_text(f"Evaluation mode is set to: {'automatic' if self.controller.mode else 'manual'}")
-        else:
-            await update.message.reply_text("? You are not authorized to use this bot.")
+        """Handles the /auto command. Sets the controller to manual mode."""
+        if not self.is_authorized(update.message.chat_id):
+            await update.message.reply_text("You are not allowed to use this bot.")
+            return
+            
+        self.controller.mode = False
+        self.controller.gui.toggle_mode_update()
+        await update.message.reply_text(f"Evaluation mode is set to: {'automatic' if self.controller.mode else 'manual'}")
 
     async def unknown_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handles unknown commands."""
+        """Handles any unknown commands."""
         await update.message.reply_text("Unknown command.")
 
     async def botloop_routine(self):

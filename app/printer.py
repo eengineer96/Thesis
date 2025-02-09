@@ -1,27 +1,27 @@
+import os
 import requests
-from formatter import format_data
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Printer:
-	
-	PRINTER_HOSTNAME = "pota.local"
+	PRINTER_HOSTNAME = os.getenv("PRINTER_HOSTNAME")
 	BASE_URL = f"http://{PRINTER_HOSTNAME}"
 	# Konstansoknak fel lehetne sorolni a különböző commandokat amire szükség lehet.
 	M119 = "M119" # Endstop státusz lekérdezés.
 	HOMEALL= "M98 P\"homeall.g"
 	PRINT_END = "M98 P\"Print_end.g\""
-	PAUSE = "M98 P\"pause.g"
+	PAUSE = "M98 P\"pause.g\""
 	
 	def get_printer_status(self):
 		try:
 			response = requests.get(f"{self.BASE_URL}/rr_status?type=1")
 			response.raise_for_status()
-			#status_data = response.json()
-			formatted_text = format_data(response.json())
-			return formatted_text
+			return response.json()
+			#formatted_text = format_data(response.json())
+			#return formatted_text
 		except requests.RequestException as ex:
-			# Ehelyett kell egy msgbox vagy valamit meghívni a GUI-n, hogy sikertelen
-			print(f"Error fetching printer status: {ex}")
-			return None
+			return(f"Error fetching printer status: {ex}")
 			
 	def send_gcode_command(self, command):
 		try:
@@ -31,6 +31,6 @@ class Printer:
 			response = requests.get(f"{self.BASE_URL}/rr_reply")
 			return response.text.strip()
 		except requests.RequestException as ex:
-			print(f"Error sending G-code command: {ex}")
+			return(f"Error sending G-code command: {ex}")
 		
 	
