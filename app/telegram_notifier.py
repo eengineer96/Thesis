@@ -140,7 +140,7 @@ class TelegramNotifier:
         await update.message.reply_text(f"Evaluation mode is set to: {'automatic' if self.controller.mode else 'manual'}")
         
     async def manual_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handles the /auto command. Sets the controller to manual mode."""
+        """Handles the /manual command. Sets the controller to manual mode."""
         if not self.is_authorized(update.message.chat_id):
             await update.message.reply_text("You are not allowed to use this bot.")
             return
