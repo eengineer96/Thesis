@@ -13,8 +13,10 @@ load_dotenv()
 """
 TODO:
 
-Try-Catchbe kell rakni minden commandot amit kap is, mert nem tudja a GUI-t updatelni rendesen, ha épp nem ott jár a folyamat.
-PRINT-END el lett küldve vagy 10x amikor az automata mód kickelt.
+- Try-Catchbe kell rakni minden commandot amit kap is, mert nem tudja a GUI-t updatelni rendesen, ha épp nem ott jár a folyamat.
+- Try-Catch wrapper, hogy ne kelljen minden függvényben ismételni a for-try-catch blokkot
+- PRINT-END el lett küldve vagy 10x amikor az automata mód kickelt.
+- Stop command-ot csak akkor lehessen küldeni, ha manuálban van a nyomtató.
 
 """
 class TelegramNotifier:
@@ -86,10 +88,12 @@ class TelegramNotifier:
             await update.message.reply_text("You are not allowed to use this bot.")
             return
         
-        response = self.controller.printer.send_gcode_command(self.controller.printer.PAUSE)
-        await update.message.reply_text(f"Printer's response: {response}")
-        
-        
+        self.controller.printer.send_gcode_command(self.controller.printer.PAUSE)
+        update.message.reply_text(f"Command successfully sent!")
+        #Printer válasz:
+        #response = self.controller.printer.send_gcode_command(self.controller.printer.PAUSE)
+        #await update.message.reply_text(f"Printer's response: {response}")
+                
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handles the /status command. Sends an image and a few parameters."""
         if not self.is_authorized(update.message.chat_id):
@@ -125,9 +129,15 @@ class TelegramNotifier:
         if not self.is_authorized(update.message.chat_id):
             await update.message.reply_text("You are not allowed to use this bot.")
             return
-            
-        response = self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
-        await update.message.reply_text(f"Printer's response: {response}")
+        if self.controller.mode:
+            await update.message.reply_text("You can not send 'stop' in automatic mode!")
+            return
+        
+        self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
+        update.message.reply_text(f"Command successfully sent!")
+        #Printer válasz:
+        #response = self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
+        #await update.message.reply_text(f"Printer's response: {response}")
         
     async def auto_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handles the /auto command. Sets the controller to automatic mode."""
