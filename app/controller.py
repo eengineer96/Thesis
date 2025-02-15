@@ -22,14 +22,15 @@ class Controller:
         
         self.telegram_notifier.start_bot()
 
-        self._tolerance = 80
+        self._tolerance = 90
         self._persistence = 10
         self._mode = False
         self._nok_counter = 0
         self._result = ""
         self._confidence = 0
         self._persistent_anomaly = 0
-        self. notification_sent_flag = False
+        self._notification_sent_flag = False
+        self._stop_sent_flag = False
     
     
     @property
@@ -95,9 +96,21 @@ class Controller:
     @nok_counter.setter	
     def nok_counter(self, value):
         self._nok_counter = value
+
+    @property
+    def stop_sent_flag(self):
+        return self._stop_sent_flag
+        
+    @stop_sent_flag.setter	
+    def stop_sent_flag(self, value):
+        self._stop_sent_flag = value
+        print(f"Stop sent flag set to: {value}")
         
     def reset_counter(self):
         self.nok_counter = 0
+    
+    def reset_notification_flag(self):
+        self._notification_sent_flag = False
     
     def get_camera_frame(self):
         return self.camera.capture_array()
@@ -107,13 +120,15 @@ class Controller:
         frame = self.get_camera_frame()
         frame_image = Image.fromarray(frame)
         frame_image = frame_image.convert("RGB")
-        self.result, self.confidence = self.model_evaluator.evaluate(frame_image)
         
-        self.calculate_nok_counter()
+        if not self._stop_sent_flag:
+            self.result, self.confidence = self.model_evaluator.evaluate(frame_image)
         
-        self.evaluate_anomaly_persistence(frame_image)
+            self.calculate_nok_counter()
         
-        self.gui.update_evaluation_values(self.result, self.confidence)
+            self.evaluate_anomaly_persistence(frame_image)
+        
+            self.gui.update_evaluation_values(self.result, self.confidence)
         self.gui.after(self.MODEL_EVALUATION_INTERVAL, self.evaluate_model)
     
     def calculate_nok_counter(self):
@@ -129,28 +144,23 @@ class Controller:
             self.send_notification(frame_image)
             if self.mode:
                 self.stop_printer()
+                self.stop_sent_flag = True
     
     def send_notification(self, frame_image):
-        if not self.notification_sent_flag:
-            self.notification_sent_flag = True
+        if not self._notification_sent_flag:
+            self._notification_sent_flag = True
             self.gui.after(self.NOTIFICATION_RESET_TIME, self.reset_notification_flag)
             asyncio.run_coroutine_threadsafe(
                 self.telegram_notifier.send_notification(frame_image),
                 self.telegram_notifier.loop
             )
 
-    
     def stop_printer(self):
         try:
             self.printer.send_gcode_command(self.printer.PRINT_END) 
         except Exception as ex:
             print(f"Failed to stop the printer: {ex}")
-
-    def reset_notification_flag(self):
-        self.notification_sent_flag = False
     
-    def send_gcode(self, command):
-        self.printer.send_gcode_command(command)
 
     def shutdown(self):
         self.camera.stop()

@@ -7,6 +7,12 @@ import threading
 class GUIApp(ctk.CTk):
     CAMERA_UPDATE_INTERVAL = 100
 
+    """
+    TODO:
+    - Szövegmező eltüntetése
+    - Send Gcode gomb átírása resetre ami reseteli a stop flaget
+    
+    """
     def __init__(self):
         super().__init__()
         ctk.set_appearance_mode("dark")
@@ -33,7 +39,7 @@ class GUIApp(ctk.CTk):
 
         self.tolerance_slider = ctk.CTkSlider(self.left_panel, from_=50, to=100, command=self.update_tolerance)
         self.tolerance_slider.set(self.controller.tolerance)
-        self.tolerance_slider.grid(row=0, column=0, padx=10, pady=10)
+        self.tolerance_slider.grid(row=0, column=0, padx=10, pady=1)
         self.tolerance_label = ctk.CTkLabel(self.left_panel, text=f"Confidence Tolerance: {self.controller.tolerance:.1f}%")
         self.tolerance_label.grid(row=1, column=0, padx=10, pady=5)
 
@@ -47,17 +53,16 @@ class GUIApp(ctk.CTk):
         self.mode_toggle.grid(row=4, column=0, padx=10, pady=10)
         self.toggle_mode_update()
         
-        self.send_button = ctk.CTkButton(self.left_panel, text="Send G-code", command=self.send_gcode)
-        self.send_button.grid(row=6, column=0, padx=10, pady=5)
-
-        self.gcode_textbox = ctk.CTkTextbox(self.left_panel, width=100, height=100)
-        self.gcode_textbox.grid(row=5, column=0, padx=10, pady=10, sticky="nsew")
+        self.left_panel.grid_rowconfigure(5, weight=1)
+        
+        self.reset_button = ctk.CTkButton(self.left_panel, text="Reset anomaly flag", command=self.reset_stop_flag)
+        self.reset_button.grid(row=6, column=0, padx=10, pady=5, sticky="ew")
         
         self.close_button = ctk.CTkButton(self.left_panel, text="Close", command=self.close_app)
-        self.close_button.grid(row=8, column=0, padx=10, pady=10, sticky="s")
+        self.close_button.grid(row=7, column=0, padx=10, pady=10, sticky="sew")
         
         self.camera_label = ctk.CTkLabel(self, text="", image=None, width=640, height=480)
-        self.camera_label.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
+        self.camera_label.grid(row=0, column=1, padx=20, pady=20, sticky="sew")
 
         self.result_label = ctk.CTkLabel(self, text="Prediction: ", font=("Arial", 16))
         self.result_label.grid(row=1, column=1, padx=20, pady=10)
@@ -96,12 +101,8 @@ class GUIApp(ctk.CTk):
 
         self.mode_toggle.configure(text=mode_text)
     
-    def send_gcode(self):
-        gcode_command = self.gcode_textbox.get("1.0", "end").strip()
-        if gcode_command:
-            self.controller.send_gcode(gcode_command)
-            self.gcode_textbox.delete("0.0", "end")
-
+    def reset_stop_flag(self):
+        self.controller.stop_sent_flag = False
 
     def close_app(self):
         self.controller.shutdown()

@@ -13,10 +13,7 @@ load_dotenv()
 """
 TODO:
 
-- Try-Catchbe kell rakni minden commandot amit kap is, mert nem tudja a GUI-t updatelni rendesen, ha épp nem ott jár a folyamat.
-- Try-Catch wrapper, hogy ne kelljen minden függvényben ismételni a for-try-catch blokkot
 - PRINT-END el lett küldve vagy 10x amikor az automata mód kickelt.
-- Stop command-ot csak akkor lehessen küldeni, ha manuálban van a nyomtató.
 
 """
 class TelegramNotifier:
@@ -35,7 +32,7 @@ class TelegramNotifier:
         self.application.add_handler(CommandHandler("status", self.status_command))
         self.application.add_handler(CommandHandler("stop", self.stop_command))
 
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.unknown_command))
+        self.application.add_handler(MessageHandler(filters.TEXT, self.unknown_command))
         
         self.loop = asyncio.new_event_loop()
         self.thread = threading.Thread(target=self.start_loop, args=(self.loop,))
@@ -58,7 +55,7 @@ class TelegramNotifier:
     def is_authorized(self, chat_id):
         """Validates the messager, this function is called before every command execution."""
         return chat_id == self.chat_id
-
+        
     async def send_notification(self, camera_image):
         """Sends a message with an image. This method is called if there is a persistent anomaly, and no notificiation has beent sent in a given time."""
         retries = 3
@@ -73,7 +70,7 @@ class TelegramNotifier:
 
                 await self.bot.send_photo(chat_id=self.chat_id, photo=img_buffer)
                 break
-
+                
             except (TimeoutException, NetworkError) as ex:
                 if i < retries - 1:
                     print(f"Retrying due to error: {ex}")
@@ -87,26 +84,35 @@ class TelegramNotifier:
         if not self.is_authorized(update.message.chat_id):
             await update.message.reply_text("You are not allowed to use this bot.")
             return
-        
-        self.controller.printer.send_gcode_command(self.controller.printer.PAUSE)
-        update.message.reply_text(f"Command successfully sent!")
-        #Printer válasz:
-        #response = self.controller.printer.send_gcode_command(self.controller.printer.PAUSE)
-        #await update.message.reply_text(f"Printer's response: {response}")
+            
+        retries = 3
+        for i in range(retries):
+            try:
+                self.controller.printer.send_gcode_command(self.controller.printer.PAUSE)
+                await update.message.reply_text(f"Command sent succesfully!")
+                break
+                
+            except (TimeoutException, NetworkError) as ex:
+                if i < retries - 1:
+                    print(f"Retrying due to error: {ex}")
+                    await asyncio.sleep(5)
+                    
+            except Exception as ex:
+                print(f"Failed to send Telegram notification: {ex}")
                 
     async def status_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handles the /status command. Sends an image and a few parameters."""
         if not self.is_authorized(update.message.chat_id):
             await update.message.reply_text("You are not allowed to use this bot.")
             return
-            
-        message = self.prepare_message()
-        frame = self.controller.get_camera_frame()
-        camera_image = Image.fromarray(frame).convert("RGB")
         
         retries = 3
         for i in range(retries):
             try:
+                message = self.prepare_message()
+                frame = self.controller.get_camera_frame()
+                camera_image = Image.fromarray(frame).convert("RGB")
+                
                 await self.bot.send_message(chat_id=self.chat_id, text=message, parse_mode="Markdown")
 
                 img_buffer = BytesIO()
@@ -133,11 +139,20 @@ class TelegramNotifier:
             await update.message.reply_text("You can not send 'stop' in automatic mode!")
             return
         
-        self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
-        update.message.reply_text(f"Command successfully sent!")
-        #Printer válasz:
-        #response = self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
-        #await update.message.reply_text(f"Printer's response: {response}")
+        retries = 3
+        for i in range(retries):
+            try:
+                self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
+                await update.message.reply_text(f"Command sent succesfully!")
+                break
+                
+            except (TimeoutException, NetworkError) as ex:
+                if i < retries - 1:
+                    print(f"Retrying due to error: {ex}")
+                    await asyncio.sleep(5)
+
+            except Exception as ex:
+                print(f"Failed to send Telegram notification: {ex}")
         
     async def auto_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handles the /auto command. Sets the controller to automatic mode."""
@@ -145,19 +160,43 @@ class TelegramNotifier:
             await update.message.reply_text("You are not allowed to use this bot.")
             return
         
-        self.controller.mode = True
-        self.controller.gui.toggle_mode_update()
-        await update.message.reply_text(f"Evaluation mode is set to: {'automatic' if self.controller.mode else 'manual'}")
+        retries = 3
+        for i in range(retries):
+            try:
+                self.controller.mode = True
+                self.controller.gui.toggle_mode_update()
+                await update.message.reply_text(f"Evaluation mode is set to: {'automatic' if self.controller.mode else 'manual'}")
+                break
+            
+            except (TimeoutException, NetworkError) as ex:
+                if i < retries - 1:
+                    print(f"Retrying due to error: {ex}")
+                    await asyncio.sleep(5)
+
+            except Exception as ex:
+                print(f"Failed to send Telegram notification: {ex}")
         
     async def manual_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handles the /manual command. Sets the controller to manual mode."""
         if not self.is_authorized(update.message.chat_id):
             await update.message.reply_text("You are not allowed to use this bot.")
             return
+        
+        retries = 3
+        for i in range(retries):
+            try:
+                self.controller.mode = False
+                self.controller.gui.toggle_mode_update()
+                await update.message.reply_text(f"Evaluation mode is set to: {'automatic' if self.controller.mode else 'manual'}")
+                break
             
-        self.controller.mode = False
-        self.controller.gui.toggle_mode_update()
-        await update.message.reply_text(f"Evaluation mode is set to: {'automatic' if self.controller.mode else 'manual'}")
+            except (TimeoutException, NetworkError) as ex:
+                if i < retries - 1:
+                    print(f"Retrying due to error: {ex}")
+                    await asyncio.sleep(5)
+
+            except Exception as ex:
+                print(f"Failed to send Telegram notification: {ex}")
 
     async def unknown_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handles any unknown commands."""
@@ -165,17 +204,13 @@ class TelegramNotifier:
 
     async def botloop_routine(self):
         """Run bot polling in an asyncio coroutine."""
-        # Initialize the application (bot)
         await self.application.initialize()
         await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
         await self.application.start()
 
-        # Keep the bot running by continually checking
         while True:
-            # This ensures the bot remains alive and responsive to commands.
             await asyncio.sleep(1)
         
-        # When the loop exits, shut down the bot
         await self.application.updater.stop()
         await self.application.stop()
         await self.application.shutdown()
