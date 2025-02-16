@@ -12,23 +12,20 @@ class Printer:
 	PAUSE = "M98 P\"pause.g\""
 	
 	def get_printer_status(self):
+		"""Retrieves t he current status of the 3D printer."""
 		try:
 			response = requests.get(f"{self.BASE_URL}/rr_status?type=1")
-			response.raise_for_status()
 			return response.json()
 
 		except requests.RequestException as ex:
-			return(f"Error fetching printer status: {ex}")
+			print(f"Error fetching printer status: {ex}")
 			
 	def send_gcode_command(self, command):
+		"""Sends a G-code command to the printer."""
 		try:
-			response = requests.get(f"{self.BASE_URL}/rr_gcode?gcode={command}")
-			response.raise_for_status();
-			print(f"Command '{command}' sent succesfully!")
-			response = requests.get(f"{self.BASE_URL}/rr_reply")
-			return response.text.strip()
+			requests.get(f"{self.BASE_URL}/rr_gcode?gcode={command}")
 			
 		except requests.RequestException as ex:
-			return(f"Error sending G-code command: {ex}")
+			print(f"Error sending G-code command: {ex}")
 		
 	

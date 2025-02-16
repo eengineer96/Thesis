@@ -7,6 +7,7 @@ class ModelEvaluator:
     MODEL_PATH = '/home/LaszloPota/Desktop/Thesis/app/model.pth'
     
     def __init__(self):
+        """Initializes the model, loads weights, and sets up preprocessing."""
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = CNN()
         self.model.to(self.device)
@@ -20,6 +21,7 @@ class ModelEvaluator:
         ])
     
     def evaluate(self, image):
+        """Evaluates the model on an image and returns the classification result."""
         image_tensor = self.transform(image).unsqueeze(0).to(self.device)
         with torch.no_grad():
             outputs = self.model(image_tensor)

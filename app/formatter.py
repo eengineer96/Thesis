@@ -1,4 +1,5 @@
 def format_data(status, mode, result, confidence, nok_counter):
+	"""Formats the status response got from the HTTP request and some extra data into a readable string that is sent via Telegram."""
 	fanpercent = status['params']['fanPercent'][0]
 	bed_temp = status['temps']['extra'][0]['temp']
 	hotend_temp = status['temps']['extra'][1]['temp']

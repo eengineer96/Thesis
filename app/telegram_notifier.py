@@ -10,14 +10,10 @@ from PIL import Image
 from formatter import format_data
 
 load_dotenv()
-"""
-TODO:
 
-- PRINT-END el lett küldve vagy 10x amikor az automata mód kickelt.
-
-"""
 class TelegramNotifier:
     def __init__(self):
+        """Initializes the bot and its commands, starts a new loop / thread."""
         self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN") 
         self.chat_id = int(os.getenv("TELEGRAM_CHAT_ID"))
         self.bot = Bot(token=self.bot_token)
@@ -31,18 +27,14 @@ class TelegramNotifier:
         self.application.add_handler(CommandHandler("pause", self.pause_command))
         self.application.add_handler(CommandHandler("status", self.status_command))
         self.application.add_handler(CommandHandler("stop", self.stop_command))
-
         self.application.add_handler(MessageHandler(filters.TEXT, self.unknown_command))
         
         self.loop = asyncio.new_event_loop()
         self.thread = threading.Thread(target=self.start_loop, args=(self.loop,))
         self.thread.start()
-        
-    def start_loop(self, loop):
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-        
+                
     def set_controller(self, controller):
+        """Injection of the controller."""
         self.controller = controller
         
     def prepare_message(self):
@@ -199,11 +191,12 @@ class TelegramNotifier:
                 print(f"Failed to send Telegram notification: {ex}")
 
     async def unknown_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handles any unknown commands."""
+        """Handles any unknown commands or text received from the user."""
         await update.message.reply_text("Unknown command.")
-
+        
+    
     async def botloop_routine(self):
-        """Run bot polling in an asyncio coroutine."""
+        """Runs the bot's polling loop to process incoming messages / commands."""
         await self.application.initialize()
         await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
         await self.application.start()
@@ -214,21 +207,28 @@ class TelegramNotifier:
         await self.application.updater.stop()
         await self.application.stop()
         await self.application.shutdown()
-
-    async def botloop_starttask(self):
-        """Start the bot loop task"""
-        bot_routine = asyncio.create_task(self.botloop_routine())
-        await bot_routine
+    
 
     def start_bot(self):
-        """Start the bot in a separate thread."""
+        """Starts the bot in a separate thread."""
         tg_thread = threading.Thread(target=self.run_botloop)
         tg_thread.daemon = True
         tg_thread.start()
+    
+    def start_loop(self, loop):
+        """Starts the asyncio event loop on the separate thread."""
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
 
     def run_botloop(self):
-        """Start the asyncio bot loop in a new event loop for the thread."""
+        """Runs the bot'a event loop."""
         asyncio.run(self.botloop_starttask())
+    
+    async def botloop_starttask(self):
+        """Start the bot loop as an asyncio task"""
+        bot_routine = asyncio.create_task(self.botloop_routine())
+        await bot_routine
+
         
 
 

@@ -10,6 +10,7 @@ class Controller:
     CAMERA_UPDATE_INTERVAL = 100
     
     def __init__(self, telegram_notifier, gui, printer, model_evaluator):
+        """Initializes the Controller class with the camera, the provided telegram notifier, GUI, printer, and model evaluator."""
         self.camera = Picamera2()
         self.camera_config = self.camera.create_still_configuration(main={"size": (640, 480)})
         self.camera.configure(self.camera_config)
@@ -107,16 +108,19 @@ class Controller:
         print(f"Stop sent flag set to: {value}")
         
     def reset_counter(self):
+        """Resets the NOK counter to zero."""
         self.nok_counter = 0
     
     def reset_notification_flag(self):
+        """Resets the notification sent flag after the given time period."""
         self._notification_sent_flag = False
     
     def get_camera_frame(self):
+        """Captures a frame from the camera."""
         return self.camera.capture_array()
         
-
     def evaluate_model(self):
+        """Evalutes the current frame with the model and checks the result with other helper methods."""
         frame = self.get_camera_frame()
         frame_image = Image.fromarray(frame)
         frame_image = frame_image.convert("RGB")
@@ -132,12 +136,14 @@ class Controller:
         self.gui.after(self.MODEL_EVALUATION_INTERVAL, self.evaluate_model)
     
     def calculate_nok_counter(self):
+        """Updates the NOK counter based on the evaluation result."""
         if self.result != "OK" and self.confidence >= self.tolerance:
             self.nok_counter += 1
         else:
             self.nok_counter = 0
     
     def evaluate_anomaly_persistence(self, frame_image):
+        """Checks if an anomaly has persisted long enough to trigger the notification and stop the printer."""
         self.persistent_anomaly = self.nok_counter >= self.persistence
         
         if self.persistent_anomaly:
@@ -147,6 +153,7 @@ class Controller:
                 self.stop_sent_flag = True
     
     def send_notification(self, frame_image):
+        """Sends a notification via telegram with an image if an anomaly persists."""
         if not self._notification_sent_flag:
             self._notification_sent_flag = True
             self.gui.after(self.NOTIFICATION_RESET_TIME, self.reset_notification_flag)
@@ -156,6 +163,7 @@ class Controller:
             )
 
     def stop_printer(self):
+        """Stops the printer if an anomaly has persisted long enough and if it is not stopped recently."""
         try:
             self.printer.send_gcode_command(self.printer.PRINT_END) 
         except Exception as ex:
@@ -163,4 +171,5 @@ class Controller:
     
 
     def shutdown(self):
+        """Stops the camera when shutting down the application."""
         self.camera.stop()

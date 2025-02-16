@@ -3,6 +3,7 @@ import torch.nn as nn
 
 class CNN(nn.Module):
     def __init__(self):
+        """Initializes the CNN model."""
         super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
@@ -13,6 +14,7 @@ class CNN(nn.Module):
         self.dropout = nn.Dropout(0.5)
 
     def forward(self, x):
+        """Defines the forward pass of the CNN"""
         x = self.pool(torch.relu(self.conv1(x)))
         x = self.pool(torch.relu(self.conv2(x)))
         x = self.pool(torch.relu(self.conv3(x)))
