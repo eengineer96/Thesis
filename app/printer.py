@@ -12,7 +12,7 @@ class Printer:
 	PAUSE = "M98 P\"pause.g\""
 	
 	def get_printer_status(self):
-		"""Retrieves t he current status of the 3D printer."""
+		"""Retrieves the current status of the 3D printer."""
 		try:
 			response = requests.get(f"{self.BASE_URL}/rr_status?type=1")
 			return response.json()

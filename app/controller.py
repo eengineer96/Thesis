@@ -1,8 +1,6 @@
 from picamera2 import Picamera2
 from PIL import Image
 import asyncio
-import time
-import threading
 
 class Controller:
     NOTIFICATION_RESET_TIME = 300000
@@ -91,14 +89,6 @@ class Controller:
         self._persistent_anomaly = value
     
     @property
-    def nok_counter(self):
-        return self._nok_counter
-        
-    @nok_counter.setter	
-    def nok_counter(self, value):
-        self._nok_counter = value
-
-    @property
     def stop_sent_flag(self):
         return self._stop_sent_flag
         
@@ -127,12 +117,10 @@ class Controller:
         
         if not self._stop_sent_flag:
             self.result, self.confidence = self.model_evaluator.evaluate(frame_image)
-        
             self.calculate_nok_counter()
-        
             self.evaluate_anomaly_persistence(frame_image)
-        
             self.gui.update_evaluation_values(self.result, self.confidence)
+            
         self.gui.after(self.MODEL_EVALUATION_INTERVAL, self.evaluate_model)
     
     def calculate_nok_counter(self):

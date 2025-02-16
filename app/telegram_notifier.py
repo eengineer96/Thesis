@@ -64,9 +64,8 @@ class TelegramNotifier:
                 break
                 
             except (TimeoutException, NetworkError) as ex:
-                if i < retries - 1:
-                    print(f"Retrying due to error: {ex}")
-                    await asyncio.sleep(5)
+                print(f"Retrying due to error: {ex}")
+                await asyncio.sleep(5)
 
             except Exception as ex:
                 print(f"Failed to send Telegram notification: {ex}")
@@ -85,9 +84,8 @@ class TelegramNotifier:
                 break
                 
             except (TimeoutException, NetworkError) as ex:
-                if i < retries - 1:
-                    print(f"Retrying due to error: {ex}")
-                    await asyncio.sleep(5)
+                print(f"Retrying due to error: {ex}")
+                await asyncio.sleep(5)
                     
             except Exception as ex:
                 print(f"Failed to send Telegram notification: {ex}")
@@ -115,9 +113,8 @@ class TelegramNotifier:
                 break
 
             except (TimeoutException, NetworkError) as ex:
-                if i < retries - 1:
-                    print(f"Retrying due to error: {ex}")
-                    await asyncio.sleep(5)
+                print(f"Retrying due to error: {ex}")
+                await asyncio.sleep(5)
 
             except Exception as ex:
                 print(f"Failed to send Telegram notification: {ex}")
@@ -139,9 +136,8 @@ class TelegramNotifier:
                 break
                 
             except (TimeoutException, NetworkError) as ex:
-                if i < retries - 1:
-                    print(f"Retrying due to error: {ex}")
-                    await asyncio.sleep(5)
+                print(f"Retrying due to error: {ex}")
+                await asyncio.sleep(5)
 
             except Exception as ex:
                 print(f"Failed to send Telegram notification: {ex}")
@@ -161,9 +157,8 @@ class TelegramNotifier:
                 break
             
             except (TimeoutException, NetworkError) as ex:
-                if i < retries - 1:
-                    print(f"Retrying due to error: {ex}")
-                    await asyncio.sleep(5)
+                print(f"Retrying due to error: {ex}")
+                await asyncio.sleep(5)
 
             except Exception as ex:
                 print(f"Failed to send Telegram notification: {ex}")
@@ -183,9 +178,8 @@ class TelegramNotifier:
                 break
             
             except (TimeoutException, NetworkError) as ex:
-                if i < retries - 1:
-                    print(f"Retrying due to error: {ex}")
-                    await asyncio.sleep(5)
+                print(f"Retrying due to error: {ex}")
+                await asyncio.sleep(5)
 
             except Exception as ex:
                 print(f"Failed to send Telegram notification: {ex}")

@@ -1,8 +1,6 @@
 import customtkinter as ctk
 from customtkinter import CTkImage
 from PIL import Image
-import asyncio
-import threading
 
 class GUI(ctk.CTk):
     CAMERA_UPDATE_INTERVAL = 100
