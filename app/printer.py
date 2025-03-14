@@ -18,7 +18,7 @@ class Printer:
 			return response.json()
 
 		except requests.RequestException as ex:
-			print(f"Error fetching printer status: {ex}")
+			print(f"Error requesting printer status: {ex}")
 			
 	def send_gcode_command(self, command):
 		"""Sends a G-code command to the printer."""

@@ -34,8 +34,9 @@ class TelegramNotifier:
         self.thread.start()
                 
     def set_controller(self, controller):
-        """Injection of the controller."""
+        """Injection of the controller and start command thread."""
         self.controller = controller
+        self.start_bot()
         
     def prepare_message(self):
         """Queries the status of 3D printer and formats it into a readable text with the formatter."""
@@ -131,7 +132,9 @@ class TelegramNotifier:
         retries = 3
         for i in range(retries):
             try:
-                self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
+                self.controller.stop_printer()
+                #self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
+                #self.controller.stop_sent_flag = True
                 await update.message.reply_text(f"Command sent succesfully!")
                 break
                 

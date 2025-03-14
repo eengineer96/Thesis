@@ -3,9 +3,8 @@ from PIL import Image
 import asyncio
 
 class Controller:
-    NOTIFICATION_RESET_TIME = 300000
+    NOTIFICATION_RESET_TIME = 150000
     MODEL_EVALUATION_INTERVAL = 3000
-    CAMERA_UPDATE_INTERVAL = 100
     
     def __init__(self, telegram_notifier, gui, printer, model_evaluator):
         """Initializes the Controller class with the camera, the provided telegram notifier, GUI, printer, and model evaluator."""
@@ -19,7 +18,7 @@ class Controller:
         self.telegram_notifier = telegram_notifier
         self.gui = gui
         
-        self.telegram_notifier.start_bot()
+        #self.telegram_notifier.start_bot()
 
         self._tolerance = 90
         self._persistence = 10
@@ -95,7 +94,6 @@ class Controller:
     @stop_sent_flag.setter	
     def stop_sent_flag(self, value):
         self._stop_sent_flag = value
-        print(f"Stop sent flag set to: {value}")
         
     def reset_counter(self):
         """Resets the NOK counter to zero."""
@@ -138,7 +136,6 @@ class Controller:
             self.send_notification(frame_image)
             if self.mode:
                 self.stop_printer()
-                self.stop_sent_flag = True
     
     def send_notification(self, frame_image):
         """Sends a notification via telegram with an image if an anomaly persists."""
@@ -153,7 +150,8 @@ class Controller:
     def stop_printer(self):
         """Stops the printer if an anomaly has persisted long enough and if it is not stopped recently."""
         try:
-            self.printer.send_gcode_command(self.printer.PRINT_END) 
+            self.printer.send_gcode_command(self.printer.PRINT_END)
+            self.stop_sent_flag = True 
         except Exception as ex:
             print(f"Failed to stop the printer: {ex}")
     
