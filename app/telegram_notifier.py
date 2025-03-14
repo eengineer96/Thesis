@@ -29,14 +29,57 @@ class TelegramNotifier:
         self.application.add_handler(CommandHandler("stop", self.stop_command))
         self.application.add_handler(MessageHandler(filters.TEXT, self.unknown_command))
         
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self.start_loop, args=(self.loop,))
-        self.thread.start()
+        self.notification_loop = asyncio.new_event_loop()
+        self.notification_thread = None
+        self.command_thread = None
+        #self.thread = threading.Thread(target=self.start_loop, args=(self.loop,))
+        #self.thread.start()
                 
     def set_controller(self, controller):
         """Injection of the controller and start command thread."""
         self.controller = controller
-        self.start_bot()
+        self.start_threads()
+
+    def start_threads(self):
+        """Starts all necessary threads for notifications and commands."""
+        # Start notification thread
+        self.notification_thread = threading.Thread(
+            target=self.start_notification_loop, 
+            args=(self.notification_loop,)
+        )
+        self.notification_thread.daemon = True
+        self.notification_thread.start()
+        
+        # Start command handling thread
+        self.command_thread = threading.Thread(target=self.run_command_loop)
+        self.command_thread.daemon = True
+        self.command_thread.start()
+    def start_notification_loop(self, loop):
+        """Starts the asyncio event loop on the notification thread."""
+        asyncio.set_event_loop(loop)
+        loop.run_forever()
+
+    def run_command_loop(self):
+        """Runs the bot's command event loop."""
+        asyncio.run(self.start_command_task())
+    
+    async def start_command_task(self):
+        """Start the bot loop as an asyncio task"""
+        command_routine = asyncio.create_task(self.command_routine())
+        await command_routine
+        
+    async def command_routine(self):
+        """Runs the bot's polling loop to process incoming messages / commands."""
+        await self.application.initialize()
+        await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+        await self.application.start()
+
+        while True:
+            await asyncio.sleep(1)
+        
+        await self.application.updater.stop()
+        await self.application.stop()
+        await self.application.shutdown()
         
     def prepare_message(self):
         """Queries the status of 3D printer and formats it into a readable text with the formatter."""
@@ -190,41 +233,7 @@ class TelegramNotifier:
     async def unknown_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handles any unknown commands or text received from the user."""
         await update.message.reply_text("Unknown command.")
-        
     
-    async def botloop_routine(self):
-        """Runs the bot's polling loop to process incoming messages / commands."""
-        await self.application.initialize()
-        await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
-        await self.application.start()
-
-        while True:
-            await asyncio.sleep(1)
-        
-        await self.application.updater.stop()
-        await self.application.stop()
-        await self.application.shutdown()
-    
-
-    def start_bot(self):
-        """Starts the bot in a separate thread."""
-        tg_thread = threading.Thread(target=self.run_botloop)
-        tg_thread.daemon = True
-        tg_thread.start()
-    
-    def start_loop(self, loop):
-        """Starts the asyncio event loop on the separate thread."""
-        asyncio.set_event_loop(loop)
-        loop.run_forever()
-
-    def run_botloop(self):
-        """Runs the bot'a event loop."""
-        asyncio.run(self.botloop_starttask())
-    
-    async def botloop_starttask(self):
-        """Start the bot loop as an asyncio task"""
-        bot_routine = asyncio.create_task(self.botloop_routine())
-        await bot_routine
 
         
 
