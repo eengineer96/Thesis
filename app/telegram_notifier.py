@@ -47,7 +47,7 @@ class TelegramNotifier:
         self.command_thread.start()
         
     def run_notification_loop(self, loop):
-        """Starts the asyncio event loop on the notification thread."""
+        """Runs the bot's notification event loop."""
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
