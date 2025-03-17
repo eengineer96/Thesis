@@ -13,15 +13,12 @@ load_dotenv()
 
 class TelegramNotifier:
     def __init__(self):
-        """Initializes the bot and its commands, starts a new loop / thread."""
+        """Initializes the bot and its commands, starts a new loop."""
         self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN") 
         self.chat_id = int(os.getenv("TELEGRAM_CHAT_ID"))
         self.bot = Bot(token=self.bot_token)
-
-        self.controller = None
         
         self.application = Application.builder().token(self.bot_token).build()
-        
         self.application.add_handler(CommandHandler("auto", self.auto_command))
         self.application.add_handler(CommandHandler("manual", self.manual_command))
         self.application.add_handler(CommandHandler("pause", self.pause_command))
@@ -32,54 +29,46 @@ class TelegramNotifier:
         self.notification_loop = asyncio.new_event_loop()
         self.notification_thread = None
         self.command_thread = None
-        #self.thread = threading.Thread(target=self.start_loop, args=(self.loop,))
-        #self.thread.start()
-                
+        self.controller = None
+
     def set_controller(self, controller):
-        """Injection of the controller and start command thread."""
+        """Injection of the controller and after that starting the threads."""
         self.controller = controller
         self.start_threads()
 
     def start_threads(self):
-        """Starts all necessary threads for notifications and commands."""
-        # Start notification thread
-        self.notification_thread = threading.Thread(
-            target=self.start_notification_loop, 
-            args=(self.notification_loop,)
-        )
+        """Starts the threads for notifications and commands."""
+        self.notification_thread = threading.Thread(target=self.run_notification_loop, args=(self.notification_loop,))
         self.notification_thread.daemon = True
         self.notification_thread.start()
         
-        # Start command handling thread
         self.command_thread = threading.Thread(target=self.run_command_loop)
         self.command_thread.daemon = True
         self.command_thread.start()
-    def start_notification_loop(self, loop):
+        
+    def run_notification_loop(self, loop):
         """Starts the asyncio event loop on the notification thread."""
         asyncio.set_event_loop(loop)
         loop.run_forever()
 
     def run_command_loop(self):
         """Runs the bot's command event loop."""
-        asyncio.run(self.start_command_task())
+        asyncio.run(self.command_routine())
     
-    async def start_command_task(self):
-        """Start the bot loop as an asyncio task"""
-        command_routine = asyncio.create_task(self.command_routine())
-        await command_routine
-        
     async def command_routine(self):
-        """Runs the bot's polling loop to process incoming messages / commands."""
-        await self.application.initialize()
-        await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
-        await self.application.start()
-
-        while True:
-            await asyncio.sleep(1)
+        """Runs the bot's polling loop to process incoming commands."""
+        try:
+            await self.application.initialize()
+            await self.application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+            await self.application.start()
+            
+            while True:
+                await asyncio.sleep(1)
         
-        await self.application.updater.stop()
-        await self.application.stop()
-        await self.application.shutdown()
+        finally:
+            await self.application.updater.stop()
+            await self.application.stop()
+            await self.application.shutdown()
         
     def prepare_message(self):
         """Queries the status of 3D printer and formats it into a readable text with the formatter."""
@@ -176,8 +165,6 @@ class TelegramNotifier:
         for i in range(retries):
             try:
                 self.controller.stop_printer()
-                #self.controller.printer.send_gcode_command(self.controller.printer.PRINT_END)
-                #self.controller.stop_sent_flag = True
                 await update.message.reply_text(f"Command sent succesfully!")
                 break
                 

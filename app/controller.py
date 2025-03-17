@@ -17,8 +17,6 @@ class Controller:
         self.printer = printer
         self.telegram_notifier = telegram_notifier
         self.gui = gui
-        
-        #self.telegram_notifier.start_bot()
 
         self._tolerance = 90
         self._persistence = 10
@@ -144,7 +142,7 @@ class Controller:
             self.gui.after(self.NOTIFICATION_RESET_TIME, self.reset_notification_flag)
             asyncio.run_coroutine_threadsafe(
                 self.telegram_notifier.send_notification(frame_image),
-                self.telegram_notifier.loop
+                self.telegram_notifier.notification_loop
             )
 
     def stop_printer(self):
