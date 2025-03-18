@@ -23,6 +23,6 @@ FT-14 | Telegram parancsok spamelése | Több Telegram parancs elküldése rövi
 FT-15 | Telegram ismeretlen parancs | Telegramon ismeretlen parancs vagy üzenet küldése | ✅ - Ismeretlen parancsokra és üzenetekre nem történik akció
 FT-16 | Telegram ismeretlen által küldött parancs | Telegramon 3. fél által küldött üzenet a bot részére | ✅ - Illetéktelen nem tudja használni a bot-ot
 FT-18 | Rendszer stabilitás | Hosszú (10+ óra) nyomtatás esetén túlemelegdés, instabilitás vizsgálata | ✅ - A rendszer folyamatosan működött, hiba nélkül
-FT-19 | Hálózatkiesés szimulálása | Hálózat lekapcsolása esetén rendszer helyreállás ellenőrzése | ✅ - A rendszer automatikusan helyrell hálózatkiesés után
+FT-19 | Hálózatkiesés szimulálása | Hálózat lekapcsolása esetén rendszer helyreállás ellenőrzése | ✅ - A rendszer automatikusan helyreáll hálózatkiesés után
 FT-20 | Áramkimaradás szimulálása | Tápfeszültség együttes lekapcsolása esetén rendszer helyreállás ellenőrzése | ❌ - A rendszer nem képes önállóan felállni hiba esetén
 FT-21 | Kamera leválasztása  | Értékelés közben a kamera leválasztása a Raspberry-ről | ❌ - A program kivételt dob, nem képes önállóan felállni újracsatalkoztatás után <br>*Fejlesztési lehetőség: Kivételkezelés és kamera újrainicializálása kiesés esetén*
