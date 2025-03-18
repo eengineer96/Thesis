@@ -2,6 +2,11 @@
 
 This repository contains the source code for my final thesis at **Eszterházy Károly Katolikus Egyetem (2025)**. The project focuses on developing an **anomaly detection system** for my **Duet-based 3D printer**, leveraging **machine learning** and **monitoring**.
 
+<div align="center">
+<img src="https://github.com/user-attachments/assets/42e5826d-8ae0-4de8-a759-f081b67c1a79" alt="img" width="300"/>
+</div>
+
+
 ## Hardware Components
 - **[Raspberry Pi 5 (8GB)](https://www.raspberrypi.com/products/raspberry-pi-5/)**
 - **[Raspberry Pi Global Shutter Camera](https://www.raspberrypi.com/products/raspberry-pi-global-shutter-camera/)**
