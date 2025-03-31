@@ -28,6 +28,16 @@ This repository contains the source code for my final thesis at **Eszterházy K�
 - **No Environment Variables Included**: You must configure your own environment variables.
 - **Telegram Bot Required**: You'll need to create your own bot using [BotFather](https://core.telegram.org/bots#botfather), obtain its **bot token**, and use your **chat ID**.
 
+## Datasets Used
+The model was trained using a mix of **self-collected** and **publicly available** datasets. The following Kaggle datasets were used:
+
+- **[3D-Printer Defected Dataset](https://www.kaggle.com/datasets/justin900429/3d-printer-defected-dataset) – Justin Ruan**
+- **[3D Printing Errors](https://www.kaggle.com/datasets/mikulhe/3d-printing-errors) – Mikuláš He**
+- **[3D Print Errors Appended](https://www.kaggle.com/datasets/mikulhe/3d-print-errors-appended) – Mikuláš He**
+- **[3D Printing Errors](https://www.kaggle.com/datasets/nimbus200/3d-printing-errors) – Nils Beyer**
+- **[3D Printing Failure Detection](https://www.kaggle.com/datasets/padraigvalenti/3d-printing-failure-detection) – Padraig Valenti**
+- **[3D Printing Defects](https://www.kaggle.com/datasets/totolvroum/3d-printing-defects) – Totoul Vroum**
+
 ## Disclaimer
 I am **not responsible** for any **damages** resulting from the use of this code. Use at your own risk.
 
